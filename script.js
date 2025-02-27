@@ -5,19 +5,17 @@ const fromText = document.querySelector(".from-text"),
   icons = document.querySelectorAll(".icons i"),
   translateBtn = document.querySelector("#translateButton");
 
-// Populate language dropdowns with country codes
 selectTags.forEach((selectTag, id) => {
   for (let countryCode in countries) {
     let selected =
       id === 0
-        ? countryCode === "en" ? "selected" : ""
-        : countryCode === "hi" ? "selected" : "";
+        ? countryCode === "en-GB" ? "selected" : ""
+        : countryCode === "hi-IN" ? "selected" : "";
     let option = `<option ${selected} value="${countryCode}">${countries[countryCode]}</option>`;
     selectTag.insertAdjacentHTML("beforeend", option);
   }
 });
 
-// Swap languages and texts
 exchangeIcon.addEventListener("click", () => {
   let tempText = fromText.value,
     tempLang = selectTags[0].value;
@@ -27,18 +25,16 @@ exchangeIcon.addEventListener("click", () => {
   selectTags[1].value = tempLang;
 });
 
-// Clear translation when input is empty
 fromText.addEventListener("keyup", () => {
   if (!fromText.value) {
     toText.value = "";
   }
 });
 
-// Translate text using MyMemory API
 translateBtn.addEventListener("click", () => {
   let text = fromText.value.trim(),
-    translateFrom = selectTags[0].value.split("-")[0], // Extract language only
-    translateTo = selectTags[1].value.split("-")[0]; // Extract language only
+    translateFrom = selectTags[0].value.split("-")[0], // Extract base language (en, hi, etc.)
+    translateTo = selectTags[1].value.split("-")[0];
 
   if (!text) return;
   toText.setAttribute("placeholder", "Translating...");
@@ -50,6 +46,8 @@ translateBtn.addEventListener("click", () => {
     .then((data) => {
       if (data.responseData && data.responseData.translatedText) {
         toText.value = data.responseData.translatedText;
+      } else if (data.matches.length > 0) {
+        toText.value = data.matches[0].translation;
       } else {
         toText.value = "Translation not available.";
       }
