@@ -2,10 +2,10 @@ const fromText = document.querySelector(".from-text"),
   toText = document.querySelector(".to-text"),
   exchangeIcon = document.querySelector(".exchange"),
   selectTags = document.querySelectorAll("select"),
-  icons = document.querySelectorAll(".row i"),
+  icons = document.querySelectorAll(".icons i"),
   translateBtn = document.querySelector("#translateButton");
 
-// Populate language dropdowns
+// Populate language dropdowns with country codes
 selectTags.forEach((selectTag, id) => {
   for (let countryCode in countries) {
     let selected =
@@ -17,7 +17,7 @@ selectTags.forEach((selectTag, id) => {
   }
 });
 
-// Exchange languages and texts
+// Swap languages and texts
 exchangeIcon.addEventListener("click", () => {
   let tempText = fromText.value,
     tempLang = selectTags[0].value;
@@ -27,18 +27,18 @@ exchangeIcon.addEventListener("click", () => {
   selectTags[1].value = tempLang;
 });
 
-// Clear translation field when input is empty
+// Clear translation when input is empty
 fromText.addEventListener("keyup", () => {
   if (!fromText.value) {
     toText.value = "";
   }
 });
 
-// Perform translation
+// Translate text using MyMemory API
 translateBtn.addEventListener("click", () => {
   let text = fromText.value.trim(),
-    translateFrom = selectTags[0].value,
-    translateTo = selectTags[1].value;
+    translateFrom = selectTags[0].value.split("-")[0], // Extract language only
+    translateTo = selectTags[1].value.split("-")[0]; // Extract language only
 
   if (!text) return;
   toText.setAttribute("placeholder", "Translating...");
@@ -61,22 +61,20 @@ translateBtn.addEventListener("click", () => {
     });
 });
 
-// Copy and Speech functionality
+// Handle Copy and Speech synthesis for both text areas
 icons.forEach((icon) => {
   icon.addEventListener("click", ({ target }) => {
-    if (target.classList.contains("fa-copy")) {
-      let textToCopy = target.closest(".row").classList.contains("from")
-        ? fromText.value
-        : toText.value;
+    let isFromText = target.closest(".row").classList.contains("from");
+    let text = isFromText ? fromText.value : toText.value;
+    let lang = isFromText ? selectTags[0].value.split("-")[0] : selectTags[1].value.split("-")[0];
 
-      navigator.clipboard.writeText(textToCopy);
+    if (!text) return;
+
+    if (target.classList.contains("fa-copy")) {
+      navigator.clipboard.writeText(text);
     } else if (target.classList.contains("fa-volume-up")) {
-      let utterance = new SpeechSynthesisUtterance(
-        target.closest(".row").classList.contains("from") ? fromText.value : toText.value
-      );
-      utterance.lang = target.closest(".row").classList.contains("from")
-        ? selectTags[0].value
-        : selectTags[1].value;
+      let utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = lang;
       speechSynthesis.speak(utterance);
     }
   });
