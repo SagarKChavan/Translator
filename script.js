@@ -5,6 +5,9 @@ const fromText = document.querySelector(".from-text"),
   icons = document.querySelectorAll(".icons i"),
   translateBtn = document.querySelector("#translateButton");
 
+// Google Translate API Key (Replace with your key if needed)
+const GOOGLE_API_KEY = "YOUR_GOOGLE_TRANSLATE_API_KEY";
+
 selectTags.forEach((selectTag, id) => {
   for (let countryCode in countries) {
     let selected =
@@ -31,7 +34,7 @@ fromText.addEventListener("keyup", () => {
   }
 });
 
-translateBtn.addEventListener("click", () => {
+translateBtn.addEventListener("click", async () => {
   let text = fromText.value.trim(),
     translateFrom = selectTags[0].value.split("-")[0], // Extract base language (en, hi, etc.)
     translateTo = selectTags[1].value.split("-")[0];
@@ -39,24 +42,23 @@ translateBtn.addEventListener("click", () => {
   if (!text) return;
   toText.setAttribute("placeholder", "Translating...");
 
-  let apiUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${translateFrom}|${translateTo}`;
+  let apiUrl = `https://translation.googleapis.com/language/translate/v2?key=${GOOGLE_API_KEY}&q=${encodeURIComponent(
+    text
+  )}&source=${translateFrom}&target=${translateTo}`;
 
-  fetch(apiUrl)
-    .then((res) => res.json())
-    .then((data) => {
-      if (data.responseData && data.responseData.translatedText) {
-        toText.value = data.responseData.translatedText;
-      } else if (data.matches.length > 0) {
-        toText.value = data.matches[0].translation;
-      } else {
-        toText.value = "Translation not available.";
-      }
-      toText.setAttribute("placeholder", "Translation");
-    })
-    .catch(() => {
-      toText.value = "Error in translation.";
-      toText.setAttribute("placeholder", "Translation");
-    });
+  try {
+    let res = await fetch(apiUrl);
+    let data = await res.json();
+    if (data.data && data.data.translations.length > 0) {
+      toText.value = data.data.translations[0].translatedText;
+    } else {
+      toText.value = "Translation not available.";
+    }
+  } catch (error) {
+    toText.value = "Error in translation.";
+  }
+
+  toText.setAttribute("placeholder", "Translation");
 });
 
 // Handle Copy and Speech synthesis for both text areas
