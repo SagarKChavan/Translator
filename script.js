@@ -1,10 +1,91 @@
-let apiUrl = `https://libretranslate.com/translate`;
-let response = await fetch(apiUrl, {
-  method: "POST",
-  body: JSON.stringify({
-    q: text,
-    source: translateFrom,
-    target: translateTo,
-  }),
-  headers: { "Content-Type": "application/json" },
+const fromText = document.querySelector(".from-text"),
+  toText = document.querySelector(".to-text"),
+  exchangeIcon = document.querySelector(".exchange"),
+  selectTags = document.querySelectorAll("select"),
+  icons = document.querySelectorAll(".icons i"),
+  translateBtn = document.querySelector("#translateButton");
+
+// Populate language dropdowns
+selectTags.forEach((selectTag, id) => {
+  for (let countryCode in countries) {
+    let selected =
+      id === 0
+        ? countryCode === "en-GB" ? "selected" : ""
+        : countryCode === "hi-IN" ? "selected" : "";
+    let option = `<option ${selected} value="${countryCode}">${countries[countryCode]}</option>`;
+    selectTag.insertAdjacentHTML("beforeend", option);
+  }
+});
+
+// Swap input and output languages
+exchangeIcon.addEventListener("click", () => {
+  let tempText = fromText.value,
+    tempLang = selectTags[0].value;
+  fromText.value = toText.value;
+  toText.value = tempText;
+  selectTags[0].value = selectTags[1].value;
+  selectTags[1].value = tempLang;
+});
+
+// Clear output when input is empty
+fromText.addEventListener("keyup", () => {
+  if (!fromText.value) {
+    toText.value = "";
+  }
+});
+
+// Function to translate text (Without API Key)
+translateBtn.addEventListener("click", async () => {
+  let text = fromText.value.trim(),
+    translateFrom = selectTags[0].value.split("-")[0], // Extract base language (e.g., en, hi)
+    translateTo = selectTags[1].value.split("-")[0];
+
+  if (!text) return;
+  toText.setAttribute("placeholder", "Translating...");
+
+  let apiUrl = `https://libretranslate.com/translate`;
+
+  try {
+    let response = await fetch(apiUrl, {
+      method: "POST",
+      body: JSON.stringify({
+        q: text,
+        source: translateFrom,
+        target: translateTo,
+        format: "text",
+      }),
+      headers: { "Content-Type": "application/json" },
+    });
+
+    let data = await response.json();
+
+    if (data.translatedText) {
+      toText.value = data.translatedText;
+    } else {
+      toText.value = "Translation not available.";
+    }
+  } catch (error) {
+    toText.value = "Error in translation.";
+  }
+
+  toText.setAttribute("placeholder", "Translation");
+});
+
+// Handle Copy & Speech functions
+icons.forEach((icon) => {
+  icon.addEventListener("click", ({ target }) => {
+    let isFromText = target.closest(".row").classList.contains("from");
+    let text = isFromText ? fromText.value : toText.value;
+    let lang = isFromText ? selectTags[0].value.split("-")[0] : selectTags[1].value.split("-")[0];
+
+    if (!text) return;
+
+    if (target.classList.contains("fa-copy")) {
+      navigator.clipboard.writeText(text);
+    } else if (target.classList.contains("fa-volume-up")) {
+      let utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = lang;
+      speechSynthesis.speak(utterance);
+    }
+  });
 });
