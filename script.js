@@ -14,36 +14,45 @@ const countries = {
     "de-DE": "German"
 };
 
-// Populate dropdowns with languages
+// Populate language dropdowns
 selectTags.forEach((selectTag, index) => {
     for (let countryCode in countries) {
-        let selected = (index === 0 && countryCode === "en-US") || (index === 1 && countryCode === "hi-IN") ? "selected" : "";
+        let selected =
+            (index === 0 && countryCode === "en-US") || (index === 1 && countryCode === "hi-IN") ? "selected" : "";
         let option = `<option ${selected} value="${countryCode}">${countries[countryCode]}</option>`;
         selectTag.insertAdjacentHTML("beforeend", option);
     }
 });
 
-// Swap text and languages
+// Swap input and output languages
 exchangeIcon.addEventListener("click", () => {
-    [fromText.value, toText.value] = [toText.value, fromText.value];
-    [selectTags[0].value, selectTags[1].value] = [selectTags[1].value, selectTags[0].value];
+    let tempText = fromText.value,
+        tempLang = selectTags[0].value;
+
+    fromText.value = toText.value;
+    toText.value = tempText;
+    selectTags[0].value = selectTags[1].value;
+    selectTags[1].value = tempLang;
 });
 
-// Clear output if input is empty
+// Clear output when input is empty
 fromText.addEventListener("input", () => {
     if (!fromText.value.trim()) {
         toText.value = "";
     }
 });
 
-// Translate function
+// Translate text using MyMemory API
 translateBtn.addEventListener("click", async () => {
     let text = fromText.value.trim();
-    let translateFrom = selectTags[0].value.split("-")[0]; 
-    let translateTo = selectTags[1].value.split("-")[0];
+    let translateFrom = selectTags[0].value.split("-")[0]; // Extract base language code
+    let translateTo = selectTags[1].value.split("-")[0]; // Extract target language code
 
-    if (!text) return;
-    
+    if (!text) {
+        toText.value = "";
+        return;
+    }
+
     toText.setAttribute("placeholder", "Translating...");
 
     let apiUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${translateFrom}|${translateTo}`;
@@ -51,6 +60,8 @@ translateBtn.addEventListener("click", async () => {
     try {
         let response = await fetch(apiUrl);
         let data = await response.json();
+
+        console.log("API Response:", data);
 
         if (data.responseData && data.responseData.translatedText) {
             toText.value = data.responseData.translatedText;
@@ -68,7 +79,7 @@ translateBtn.addEventListener("click", async () => {
     toText.setAttribute("placeholder", "Translation");
 });
 
-// Copy & Speech functionality
+// Handle Copy & Speech functions
 icons.forEach((icon) => {
     icon.addEventListener("click", ({ target }) => {
         let isFromText = target.closest(".row").classList.contains("from");
