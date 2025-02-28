@@ -36,9 +36,9 @@ fromText.addEventListener("keyup", () => {
 
 // Function to translate text using MyMemory API (No API Key Required)
 translateBtn.addEventListener("click", async () => {
-  let text = fromText.value.trim(),
-    translateFrom = selectTags[0].value.split("-")[0], // Extract base language (e.g., en, hi)
-    translateTo = selectTags[1].value.split("-")[0];
+  let text = fromText.value.trim();
+  let translateFrom = selectTags[0].value.split("-")[0]; // Extract language code (e.g., "en")
+  let translateTo = selectTags[1].value.split("-")[0]; // Extract language code (e.g., "hi")
 
   if (!text) return;
   toText.setAttribute("placeholder", "Translating...");
@@ -51,12 +51,16 @@ translateBtn.addEventListener("click", async () => {
     let response = await fetch(apiUrl);
     let data = await response.json();
 
-    if (data.responseData.translatedText) {
+    // Check if the response has the translated text
+    if (data.responseData && data.responseData.translatedText) {
       toText.value = data.responseData.translatedText;
+    } else if (data.matches && data.matches.length > 0) {
+      toText.value = data.matches[0].translation; // Use best match if available
     } else {
       toText.value = "Translation not available.";
     }
   } catch (error) {
+    console.error("Translation Error:", error);
     toText.value = "Error in translation.";
   }
 
