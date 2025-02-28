@@ -34,7 +34,7 @@ fromText.addEventListener("keyup", () => {
   }
 });
 
-// Function to translate text (Without API Key)
+// Function to translate text using MyMemory API (No API Key Required)
 translateBtn.addEventListener("click", async () => {
   let text = fromText.value.trim(),
     translateFrom = selectTags[0].value.split("-")[0], // Extract base language (e.g., en, hi)
@@ -43,24 +43,16 @@ translateBtn.addEventListener("click", async () => {
   if (!text) return;
   toText.setAttribute("placeholder", "Translating...");
 
-  let apiUrl = `https://libretranslate.com/translate`;
+  let apiUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(
+    text
+  )}&langpair=${translateFrom}|${translateTo}`;
 
   try {
-    let response = await fetch(apiUrl, {
-      method: "POST",
-      body: JSON.stringify({
-        q: text,
-        source: translateFrom,
-        target: translateTo,
-        format: "text",
-      }),
-      headers: { "Content-Type": "application/json" },
-    });
-
+    let response = await fetch(apiUrl);
     let data = await response.json();
 
-    if (data.translatedText) {
-      toText.value = data.translatedText;
+    if (data.responseData.translatedText) {
+      toText.value = data.responseData.translatedText;
     } else {
       toText.value = "Translation not available.";
     }
@@ -76,7 +68,9 @@ icons.forEach((icon) => {
   icon.addEventListener("click", ({ target }) => {
     let isFromText = target.closest(".row").classList.contains("from");
     let text = isFromText ? fromText.value : toText.value;
-    let lang = isFromText ? selectTags[0].value.split("-")[0] : selectTags[1].value.split("-")[0];
+    let lang = isFromText
+      ? selectTags[0].value.split("-")[0]
+      : selectTags[1].value.split("-")[0];
 
     if (!text) return;
 
