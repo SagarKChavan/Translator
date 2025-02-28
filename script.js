@@ -5,7 +5,7 @@ const fromText = document.querySelector(".from-text"),
     icons = document.querySelectorAll(".icons i"),
     translateBtn = document.querySelector("#translateButton");
 
-const countries = {
+const languages = {
     "en": "English",
     "hi": "Hindi",
     "kn": "Kannada",
@@ -20,21 +20,20 @@ const countries = {
     "pt": "Portuguese"
 };
 
-// Populate language dropdowns
-selectTags.forEach((selectTag, index) => {
-    for (let langCode in countries) {
-        let selected =
-            (index === 0 && langCode === "en") || (index === 1 && langCode === "hi") ? "selected" : "";
-        let option = `<option ${selected} value="${langCode}">${countries[langCode]}</option>`;
-        selectTag.insertAdjacentHTML("beforeend", option);
+// Populate dropdowns
+selectTags.forEach((select, index) => {
+    for (let code in languages) {
+        let selected = (index === 0 && code === "en") || (index === 1 && code === "hi") ? "selected" : "";
+        let option = `<option value="${code}" ${selected}>${languages[code]}</option>`;
+        select.insertAdjacentHTML("beforeend", option);
     }
 });
 
-// Swap input and output languages
+// Swap text and language
 exchangeIcon.addEventListener("click", () => {
     let tempText = fromText.value,
         tempLang = selectTags[0].value;
-
+    
     fromText.value = toText.value;
     toText.value = tempText;
     selectTags[0].value = selectTags[1].value;
@@ -48,11 +47,11 @@ fromText.addEventListener("input", () => {
     }
 });
 
-// Translate text using MyMemory API with proper error handling
+// Translate text with proper error handling
 translateBtn.addEventListener("click", async () => {
     let text = fromText.value.trim();
-    let translateFrom = selectTags[0].value;
-    let translateTo = selectTags[1].value;
+    let fromLang = selectTags[0].value;
+    let toLang = selectTags[1].value;
 
     if (!text) {
         toText.value = "";
@@ -61,21 +60,26 @@ translateBtn.addEventListener("click", async () => {
 
     toText.setAttribute("placeholder", "Translating...");
 
-    let apiUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${translateFrom}|${translateTo}`;
+    let apiUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${fromLang}|${toLang}`;
 
     try {
         let response = await fetch(apiUrl);
         let data = await response.json();
 
-        console.log("API Response:", data);
+        console.log("Translation API Response:", data);
 
         if (data.responseData && data.responseData.translatedText) {
-            toText.value = data.responseData.translatedText;
-        } else if (data.matches?.length) {
-            let bestMatch = data.matches.find(match => match.translation);
-            toText.value = bestMatch ? bestMatch.translation : "Translation unavailable.";
+            let translatedText = data.responseData.translatedText;
+
+            // Check for incorrect translations (API sometimes returns the same input)
+            if (translatedText.toLowerCase() === text.toLowerCase()) {
+                console.warn("Warning: Possible incorrect translation, retrying...");
+                translatedText = await fetchAlternativeTranslation(text, fromLang, toLang);
+            }
+
+            toText.value = translatedText;
         } else {
-            throw new Error("No translation available.");
+            throw new Error("Invalid translation received.");
         }
     } catch (error) {
         console.error("Translation Error:", error);
@@ -85,12 +89,30 @@ translateBtn.addEventListener("click", async () => {
     toText.setAttribute("placeholder", "Translation");
 });
 
-// Handle Copy & Speech functions
+// Alternative translation function for better results
+async function fetchAlternativeTranslation(text, fromLang, toLang) {
+    let altApiUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${fromLang}&tl=${toLang}&dt=t&q=${encodeURIComponent(text)}`;
+
+    try {
+        let response = await fetch(altApiUrl);
+        let data = await response.json();
+        
+        if (Array.isArray(data) && data[0]) {
+            return data[0].map(item => item[0]).join("");
+        }
+    } catch (error) {
+        console.error("Alternative Translation Failed:", error);
+    }
+
+    return "Translation unavailable.";
+}
+
+// Copy & Speech functionality
 icons.forEach((icon) => {
     icon.addEventListener("click", ({ target }) => {
-        let isFromText = target.closest(".row").classList.contains("from");
-        let text = isFromText ? fromText.value : toText.value;
-        let lang = isFromText ? selectTags[0].value : selectTags[1].value;
+        let isFrom = target.closest(".row").classList.contains("from");
+        let text = isFrom ? fromText.value : toText.value;
+        let lang = isFrom ? selectTags[0].value : selectTags[1].value;
 
         if (!text) return;
 
