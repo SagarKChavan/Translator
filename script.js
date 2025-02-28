@@ -6,20 +6,26 @@ const fromText = document.querySelector(".from-text"),
     translateBtn = document.querySelector("#translateButton");
 
 const countries = {
-    "en-US": "English",
-    "hi-IN": "Hindi",
-    "kn-IN": "Kannada",
-    "fr-FR": "French",
-    "es-ES": "Spanish",
-    "de-DE": "German"
+    "en": "English",
+    "hi": "Hindi",
+    "kn": "Kannada",
+    "fr": "French",
+    "es": "Spanish",
+    "de": "German",
+    "zh": "Chinese",
+    "ja": "Japanese",
+    "ru": "Russian",
+    "ar": "Arabic",
+    "it": "Italian",
+    "pt": "Portuguese"
 };
 
 // Populate language dropdowns
 selectTags.forEach((selectTag, index) => {
-    for (let countryCode in countries) {
+    for (let langCode in countries) {
         let selected =
-            (index === 0 && countryCode === "en-US") || (index === 1 && countryCode === "hi-IN") ? "selected" : "";
-        let option = `<option ${selected} value="${countryCode}">${countries[countryCode]}</option>`;
+            (index === 0 && langCode === "en") || (index === 1 && langCode === "hi") ? "selected" : "";
+        let option = `<option ${selected} value="${langCode}">${countries[langCode]}</option>`;
         selectTag.insertAdjacentHTML("beforeend", option);
     }
 });
@@ -42,11 +48,11 @@ fromText.addEventListener("input", () => {
     }
 });
 
-// Translate text using MyMemory API
+// Translate text using MyMemory API with proper error handling
 translateBtn.addEventListener("click", async () => {
     let text = fromText.value.trim();
-    let translateFrom = selectTags[0].value.split("-")[0]; // Extract base language code
-    let translateTo = selectTags[1].value.split("-")[0]; // Extract target language code
+    let translateFrom = selectTags[0].value;
+    let translateTo = selectTags[1].value;
 
     if (!text) {
         toText.value = "";
@@ -67,13 +73,13 @@ translateBtn.addEventListener("click", async () => {
             toText.value = data.responseData.translatedText;
         } else if (data.matches?.length) {
             let bestMatch = data.matches.find(match => match.translation);
-            toText.value = bestMatch ? bestMatch.translation : "Translation not available.";
+            toText.value = bestMatch ? bestMatch.translation : "Translation unavailable.";
         } else {
-            toText.value = "Translation not available.";
+            throw new Error("No translation available.");
         }
     } catch (error) {
         console.error("Translation Error:", error);
-        toText.value = "Error in translation.";
+        toText.value = "Error: Translation failed.";
     }
 
     toText.setAttribute("placeholder", "Translation");
@@ -84,7 +90,7 @@ icons.forEach((icon) => {
     icon.addEventListener("click", ({ target }) => {
         let isFromText = target.closest(".row").classList.contains("from");
         let text = isFromText ? fromText.value : toText.value;
-        let lang = isFromText ? selectTags[0].value.split("-")[0] : selectTags[1].value.split("-")[0];
+        let lang = isFromText ? selectTags[0].value : selectTags[1].value;
 
         if (!text) return;
 
