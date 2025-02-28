@@ -14,7 +14,7 @@ const countries = {
     "de-DE": "German"
 };
 
-// Populate language dropdowns dynamically
+// Populate dropdowns with languages
 selectTags.forEach((selectTag, index) => {
     for (let countryCode in countries) {
         let selected = (index === 0 && countryCode === "en-US") || (index === 1 && countryCode === "hi-IN") ? "selected" : "";
@@ -23,32 +23,27 @@ selectTags.forEach((selectTag, index) => {
     }
 });
 
-// Swap input and output text & languages
+// Swap text and languages
 exchangeIcon.addEventListener("click", () => {
-    let tempText = fromText.value;
-    let tempLang = selectTags[0].value;
-
-    fromText.value = toText.value;
-    toText.value = tempText;
-
-    selectTags[0].value = selectTags[1].value;
-    selectTags[1].value = tempLang;
+    [fromText.value, toText.value] = [toText.value, fromText.value];
+    [selectTags[0].value, selectTags[1].value] = [selectTags[1].value, selectTags[0].value];
 });
 
-// Clear output when input is empty
+// Clear output if input is empty
 fromText.addEventListener("input", () => {
     if (!fromText.value.trim()) {
         toText.value = "";
     }
 });
 
-// Translate function using MyMemory API
+// Translate function
 translateBtn.addEventListener("click", async () => {
     let text = fromText.value.trim();
-    let translateFrom = selectTags[0].value.split("-")[0];
+    let translateFrom = selectTags[0].value.split("-")[0]; 
     let translateTo = selectTags[1].value.split("-")[0];
 
     if (!text) return;
+    
     toText.setAttribute("placeholder", "Translating...");
 
     let apiUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${translateFrom}|${translateTo}`;
@@ -57,9 +52,7 @@ translateBtn.addEventListener("click", async () => {
         let response = await fetch(apiUrl);
         let data = await response.json();
 
-        console.log("API Response:", data); // Debugging response
-
-        if (data.responseData?.translatedText) {
+        if (data.responseData && data.responseData.translatedText) {
             toText.value = data.responseData.translatedText;
         } else if (data.matches?.length) {
             let bestMatch = data.matches.find(match => match.translation);
@@ -75,7 +68,7 @@ translateBtn.addEventListener("click", async () => {
     toText.setAttribute("placeholder", "Translation");
 });
 
-// Handle Copy & Speech functions
+// Copy & Speech functionality
 icons.forEach((icon) => {
     icon.addEventListener("click", ({ target }) => {
         let isFromText = target.closest(".row").classList.contains("from");
